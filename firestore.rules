@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Rooms and their participants are publicly readable and writable.
+    // This is intentional: PokerDag is a no-login planning poker tool.
+    // Room IDs are random and unguessable, providing security through obscurity.
+    match /rooms/{roomId} {
+      allow read, write: if true;
+      match /participants/{participantId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}
