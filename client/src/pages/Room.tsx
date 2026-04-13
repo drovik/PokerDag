@@ -4,8 +4,36 @@ import { useRoom } from '../hooks/useRoom';
 import { Header } from '../components/Header';
 import { NameModal } from '../components/NameModal';
 import { CardGrid } from '../components/CardGrid';
-import { ParticipantList } from '../components/ParticipantList';
-import { ResultsView } from '../components/ResultsView';
+import { PokerTable } from '../components/PokerTable';
+import type { Participant } from '../types';
+
+function ResultsStats({ participants }: { participants: Participant[] }) {
+  const voteCounts = new Map<string, number>();
+  for (const p of participants) {
+    if (p.vote !== null) voteCounts.set(p.vote, (voteCounts.get(p.vote) ?? 0) + 1);
+  }
+  if (voteCounts.size === 0) return null;
+
+  const maxCount = Math.max(...voteCounts.values());
+  const mostCommon = [...voteCounts.entries()]
+    .filter(([, c]) => c === maxCount)
+    .map(([v]) => v);
+
+  const voted = participants.filter((p) => p.vote !== null);
+  const isConsensus =
+    voted.length > 1 && mostCommon.length === 1 && voted.every((p) => p.vote === mostCommon[0]);
+
+  return (
+    <div className="mt-3 text-center text-sm text-slate-500 flex justify-center gap-5 flex-wrap">
+      {isConsensus && (
+        <span className="text-emerald-400 font-semibold">Consensus!</span>
+      )}
+      <span>
+        Most voted: <span className="text-slate-300 font-medium">{mostCommon.join(', ')}</span>
+      </span>
+    </div>
+  );
+}
 
 export function Room() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -15,7 +43,6 @@ export function Room() {
   const [name, setName] = useState(() => localStorage.getItem('pokerdag-name') ?? '');
   const [showNameEdit, setShowNameEdit] = useState(false);
 
-  // Auto-join once Firestore is ready and we have a name
   useEffect(() => {
     if (!room.loading && !room.joined && name) {
       room.join(name);
@@ -26,9 +53,7 @@ export function Room() {
     (newName: string) => {
       localStorage.setItem('pokerdag-name', newName);
       setName(newName);
-      if (room.joined) {
-        room.changeName(newName);
-      }
+      if (room.joined) room.changeName(newName);
       setShowNameEdit(false);
     },
     [room.joined, room.changeName],
@@ -39,7 +64,6 @@ export function Room() {
     return null;
   }
 
-  // Show name entry before anything else if no name stored
   if (!name) {
     return (
       <div className="min-h-screen bg-slate-950">
@@ -51,49 +75,39 @@ export function Room() {
   const { participants, revealed, loading } = room;
   const myParticipant = participants.find((p) => p.id === room.myId);
   const myVote = myParticipant?.vote ?? null;
-  const votedCount = participants.filter((p) => p.vote !== null).length;
-  const canReveal = votedCount > 0;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       <Header roomId={roomId} myName={name} onEditName={() => setShowNameEdit(true)} />
 
       {showNameEdit && (
-        <NameModal initial={name} onSubmit={handleNameSubmit} onClose={() => setShowNameEdit(false)} />
+        <NameModal
+          initial={name}
+          onSubmit={handleNameSubmit}
+          onClose={() => setShowNameEdit(false)}
+        />
       )}
 
-      <main className="flex-1 container mx-auto max-w-4xl px-4 py-8">
+      <main className="flex-1 container mx-auto max-w-5xl px-4 py-6">
         {loading ? (
           <div className="flex items-center justify-center h-40 text-slate-500 animate-pulse">
             Connecting…
           </div>
         ) : (
           <>
-            {/* Participant list — always visible */}
-            <div className="mb-8">
-              <ParticipantList participants={participants} myId={room.myId} />
-            </div>
+            <PokerTable
+              participants={participants}
+              myId={room.myId}
+              revealed={revealed}
+              onReveal={room.reveal}
+              onNewRound={room.newRound}
+            />
 
-            {revealed ? (
-              /* ── Results ── */
-              <ResultsView participants={participants} onNewRound={room.newRound} />
-            ) : (
-              /* ── Voting phase ── */
-              <div>
+            {revealed && <ResultsStats participants={participants} />}
+
+            {!revealed && (
+              <div className="mt-6">
                 <CardGrid myVote={myVote} onVote={room.vote} />
-
-                <div className="mt-10 flex flex-col items-center gap-3">
-                  <button
-                    onClick={room.reveal}
-                    disabled={!canReveal}
-                    className="px-10 py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/10"
-                  >
-                    Reveal Votes
-                  </button>
-                  {!canReveal && (
-                    <p className="text-xs text-slate-600">Waiting for at least one vote…</p>
-                  )}
-                </div>
               </div>
             )}
           </>
