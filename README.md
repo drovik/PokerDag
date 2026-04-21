@@ -2,7 +2,7 @@
 
 Planning poker for your team — no login required, no persistence.
 
-**Live:** https://drovik.github.io/test/
+**Live:** https://drovik.github.io/PokerDag/
 
 ---
 
@@ -55,7 +55,7 @@ npm run dev
 2. Enable GitHub Pages: **Settings → Pages → Source → GitHub Actions**
 3. Push to `main` — the workflow deploys automatically.
 
-> The base path `/test/` in the workflow matches this repo name. If you rename the repo, update `VITE_BASE_PATH` in `.github/workflows/deploy.yml`.
+> The base path `/PokerDag/` in the workflow matches this repo name. If you rename the repo, update `VITE_BASE_PATH` in `.github/workflows/deploy.yml`.
 
 ---
 
