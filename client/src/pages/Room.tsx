@@ -9,7 +9,6 @@ import type { Participant } from '../types';
 
 const CARD_ORDER = ['1', '2', '3', '5', '8', '13', '21', '?', '☕'];
 
-// ── Editable session title ──────────────────────────────────────────
 function RoomTitle({ title, onSave }: { title: string; onSave: (t: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(title);
@@ -36,25 +35,21 @@ function RoomTitle({ title, onSave }: { title: string; onSave: (t: string) => vo
         }}
         maxLength={60}
         placeholder="e.g. Sprint 25.3"
-        className="text-lg font-semibold bg-transparent border-b-2 border-indigo-500 text-slate-100 focus:outline-none pb-0.5 w-64"
+        className="text-lg font-semibold bg-transparent border-b-2 border-[var(--border-focus)] text-[var(--text)] focus:outline-none pb-0.5 w-64"
       />
     );
   }
 
   return (
-    <button
-      onClick={() => setEditing(true)}
-      className="flex items-center gap-2 group"
-    >
-      <span className={title ? 'text-lg font-semibold text-slate-200' : 'text-sm text-slate-600 italic'}>
+    <button onClick={() => setEditing(true)} className="flex items-center gap-2 group">
+      <span className={title ? 'text-lg font-semibold text-[var(--text)]' : 'text-sm text-[var(--text-muted)] italic'}>
         {title || '+ Add title'}
       </span>
-      <span className="text-slate-700 group-hover:text-slate-400 text-xs transition-colors">✏️</span>
+      <span className="text-[var(--text-muted)] group-hover:text-[var(--text-3)] text-xs transition-colors">✏️</span>
     </button>
   );
 }
 
-// ── Outlier detection ───────────────────────────────────────────────
 function getOutliers(participants: Participant[]): { low: Set<string>; high: Set<string> } {
   const numeric = participants.filter((p) => p.vote !== null && !isNaN(Number(p.vote)));
   const empty = { low: new Set<string>(), high: new Set<string>() };
@@ -69,7 +64,6 @@ function getOutliers(participants: Participant[]): { low: Set<string>; high: Set
   };
 }
 
-// ── Results stats panel ─────────────────────────────────────────────
 function ResultsStats({ participants }: { participants: Participant[] }) {
   const voteCounts = new Map<string, number>();
   for (const p of participants) {
@@ -99,9 +93,9 @@ function ResultsStats({ participants }: { participants: Participant[] }) {
     participants.filter((p) => p.vote === value).map((p) => p.name);
 
   return (
-    <div className="mt-4 bg-slate-800/50 border border-slate-700/60 rounded-2xl p-4 space-y-4">
+    <div className="mt-4 bg-[var(--bg-2)] border border-[var(--border)] rounded-2xl p-4 space-y-4">
       {isConsensus ? (
-        <div className="text-center text-emerald-400 font-semibold text-sm">Consensus!</div>
+        <div className="text-center text-emerald-400 font-semibold text-sm">Consensus! 🎉</div>
       ) : highSpread ? (
         <div className="text-center text-amber-400 text-sm font-medium">
           High spread ({spread}) — worth a discussion
@@ -115,29 +109,29 @@ function ResultsStats({ participants }: { participants: Participant[] }) {
           const names = voterNames(value);
           return (
             <div key={value} className="flex items-center gap-3 text-sm">
-              <span className={['w-8 text-center font-bold shrink-0', isTop ? 'text-indigo-300' : 'text-slate-400'].join(' ')}>
+              <span className={['w-8 text-center font-bold shrink-0', isTop ? 'text-[var(--accent)]' : 'text-[var(--text-3)]'].join(' ')}>
                 {value}
               </span>
-              <div className="flex-1 bg-slate-700/40 rounded-full h-5 overflow-hidden">
+              <div className="flex-1 bg-[var(--bg-3)] rounded-full h-5 overflow-hidden">
                 <div
-                  className={['h-full rounded-full transition-all duration-500', isTop ? 'bg-indigo-600' : 'bg-slate-600'].join(' ')}
+                  className={['h-full rounded-full transition-all duration-500', isTop ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'].join(' ')}
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-slate-500 shrink-0 w-5 text-right">{count}</span>
-              <span className="text-slate-500 text-xs shrink-0 hidden sm:block">{names.join(', ')}</span>
+              <span className="text-[var(--text-3)] shrink-0 w-5 text-right">{count}</span>
+              <span className="text-[var(--text-3)] text-xs shrink-0 hidden sm:block">{names.join(', ')}</span>
             </div>
           );
         })}
       </div>
 
       {nums.length > 1 && (
-        <div className="flex justify-center gap-6 text-xs text-slate-500 pt-1 border-t border-slate-700/40">
-          <span>Min <span className="text-slate-300 font-medium">{min}</span></span>
-          <span>Max <span className="text-slate-300 font-medium">{max}</span></span>
+        <div className="flex justify-center gap-6 text-xs text-[var(--text-3)] pt-1 border-t border-[var(--border)]">
+          <span>Min <span className="text-[var(--text)] font-medium">{min}</span></span>
+          <span>Max <span className="text-[var(--text)] font-medium">{max}</span></span>
           <span>
             Spread{' '}
-            <span className={highSpread ? 'text-amber-400 font-medium' : 'text-slate-300 font-medium'}>
+            <span className={highSpread ? 'text-amber-400 font-medium' : 'text-[var(--text)] font-medium'}>
               {spread}
             </span>
           </span>
@@ -147,7 +141,6 @@ function ResultsStats({ participants }: { participants: Participant[] }) {
   );
 }
 
-// ── Room page ───────────────────────────────────────────────────────
 export function Room() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -179,7 +172,7 @@ export function Room() {
 
   if (!name) {
     return (
-      <div className="min-h-screen bg-slate-950">
+      <div className="min-h-screen bg-[var(--bg)]">
         <NameModal onSubmit={handleNameSubmit} />
       </div>
     );
@@ -191,7 +184,7 @@ export function Room() {
   const outliers = revealed ? getOutliers(participants) : { low: new Set<string>(), high: new Set<string>() };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col">
       <Header roomId={roomId} myName={name} onEditName={() => setShowNameEdit(true)} />
 
       {showNameEdit && (
@@ -200,7 +193,7 @@ export function Room() {
 
       <main className="flex-1 container mx-auto max-w-5xl px-4 py-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-slate-500 animate-pulse">
+          <div className="flex items-center justify-center h-40 text-[var(--text-3)] animate-pulse">
             Connecting…
           </div>
         ) : (

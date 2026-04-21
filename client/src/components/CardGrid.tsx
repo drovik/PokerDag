@@ -9,7 +9,7 @@ type CardGridProps = {
 export function CardGrid({ myVote, onVote, disabled = false }: CardGridProps) {
   return (
     <div>
-      <p className="text-center text-sm text-slate-500 mb-4">Pick your estimate</p>
+      <p className="text-center text-sm text-[var(--text-3)] mb-4">Pick your estimate</p>
       <div className="flex flex-wrap justify-center gap-3">
         {CARD_VALUES.map((value) => {
           const selected = myVote === value;
@@ -23,10 +23,10 @@ export function CardGrid({ myVote, onVote, disabled = false }: CardGridProps) {
                 'flex items-center justify-center select-none',
                 'transition-all duration-150',
                 selected
-                  ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-500/25 scale-105'
-                  : 'bg-slate-800 border-slate-600 text-slate-200 hover:bg-slate-700 hover:border-indigo-500 hover:scale-105',
+                  ? 'btn-accent border-[var(--accent)] shadow-lg scale-105'
+                  : 'bg-[var(--bg-3)] border-[var(--border)] text-[var(--text)] hover:border-[var(--accent)] hover:scale-105',
                 disabled
-                  ? 'opacity-50 cursor-not-allowed hover:scale-100 hover:bg-slate-800 hover:border-slate-600'
+                  ? 'opacity-50 cursor-not-allowed hover:scale-100'
                   : 'cursor-pointer active:scale-95',
               ].join(' ')}
             >

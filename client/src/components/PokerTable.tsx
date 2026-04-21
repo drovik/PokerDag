@@ -29,14 +29,6 @@ function getAverage(participants: Participant[]): string | null {
   return Number.isInteger(avg) ? String(avg) : avg.toFixed(1);
 }
 
-const CARD_BACK: React.CSSProperties = {
-  backgroundColor: '#312e81',
-  backgroundImage: [
-    'repeating-linear-gradient(135deg, rgba(129,140,248,0.18) 0px, rgba(129,140,248,0.18) 2px, transparent 2px, transparent 10px)',
-    'repeating-linear-gradient(45deg,  rgba(129,140,248,0.18) 0px, rgba(129,140,248,0.18) 2px, transparent 2px, transparent 10px)',
-  ].join(', '),
-};
-
 function Seat({
   participant,
   isMe,
@@ -53,14 +45,12 @@ function Seat({
 
   let cardClass =
     'w-10 h-14 rounded-lg border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-md select-none';
-  let cardStyle: React.CSSProperties = {};
   let cardContent: string;
 
   if (!hasVoted) {
-    cardClass += ' bg-slate-800/50 border-slate-600/40 text-slate-600';
+    cardClass += ' bg-[var(--bg-3)] border-[var(--border)] text-[var(--text-muted)]';
     cardContent = '–';
   } else if (showValue) {
-    // Outlier cards get a tinted border
     if (outlierType === 'low') {
       cardClass += ' bg-white border-amber-400 text-slate-900 shadow-lg shadow-amber-500/20';
     } else if (outlierType === 'high') {
@@ -70,14 +60,13 @@ function Seat({
     }
     cardContent = participant.vote!;
   } else {
-    cardClass += ' border-indigo-500/60';
-    cardStyle = CARD_BACK;
+    cardClass += ' card-back border-[var(--accent)]';
     cardContent = '';
   }
 
   return (
     <div className="flex flex-col items-center gap-1 pointer-events-none select-none">
-      <div className={cardClass} style={cardStyle}>
+      <div className={cardClass}>
         {cardContent}
       </div>
       <div className="flex flex-col items-center gap-0.5">
@@ -85,13 +74,13 @@ function Seat({
           className={[
             'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold uppercase',
             isMe
-              ? 'bg-indigo-500 text-white ring-2 ring-indigo-300/60'
-              : 'bg-slate-600 text-slate-200',
+              ? 'bg-[var(--accent)] text-white ring-2 ring-[var(--accent)]/60'
+              : 'bg-[var(--bg-3)] text-[var(--text-2)]',
           ].join(' ')}
         >
           {participant.name[0]}
         </div>
-        <span className="text-[11px] text-slate-400 whitespace-nowrap max-w-[72px] truncate">
+        <span className="text-[11px] text-[var(--text-3)] whitespace-nowrap max-w-[72px] truncate">
           {participant.name}
         </span>
         {outlierType && (
@@ -130,18 +119,16 @@ export function PokerTable({
       <div className="absolute inset-[6%] rounded-[50%] shadow-[0_0_60px_rgba(0,0,0,0.6)] overflow-visible">
         <div
           className="absolute inset-0 rounded-[50%]"
-          style={{
-            background: 'radial-gradient(ellipse at 40% 35%, #166534, #14532d 55%, #0f3d21)',
-          }}
+          style={{ background: 'var(--felt-bg)' }}
         />
         <div
           className="absolute rounded-[50%] pointer-events-none"
           style={{
             inset: '-10px',
             border: '10px solid transparent',
-            borderColor: '#78350f',
+            borderColor: 'var(--rail-border)',
             boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.4)',
-            background: 'radial-gradient(ellipse at 30% 20%, #92400e, #78350f 50%, #451a03) border-box',
+            background: 'var(--rail-bg) border-box',
             WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
             WebkitMaskComposite: 'destination-out',
             maskComposite: 'exclude',
@@ -153,7 +140,10 @@ export function PokerTable({
             <>
               {average && (
                 <div className="text-center leading-tight">
-                  <div className="text-[10px] uppercase tracking-widest text-green-400/60 mb-0.5">
+                  <div
+                    className="text-[10px] uppercase tracking-widest mb-0.5"
+                    style={{ color: 'var(--felt-text)' }}
+                  >
                     Average
                   </div>
                   <div className="text-4xl font-bold text-white drop-shadow">{average}</div>
@@ -169,14 +159,17 @@ export function PokerTable({
           ) : (
             <>
               {total > 0 && (
-                <div className="text-[11px] uppercase tracking-widest text-green-400/50">
+                <div
+                  className="text-[11px] uppercase tracking-widest"
+                  style={{ color: 'var(--felt-text)' }}
+                >
                   {votedCount} / {total} voted
                 </div>
               )}
               <button
                 onClick={onReveal}
                 disabled={!canReveal}
-                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700/60 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors shadow-lg"
+                className="px-6 py-2 bg-[var(--accent)] hover:bg-[var(--accent-h)] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors shadow-lg"
               >
                 Reveal
               </button>
@@ -207,7 +200,7 @@ export function PokerTable({
 
       {total === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-green-700/60 text-sm">Waiting for players…</span>
+          <span className="text-sm" style={{ color: 'var(--felt-text)' }}>Waiting for players…</span>
         </div>
       )}
     </div>
