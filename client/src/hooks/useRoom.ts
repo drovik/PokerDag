@@ -28,10 +28,10 @@ export function useRoom(roomId: string) {
   const participantsRef = useRef<Participant[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [revealed, setRevealed] = useState(false);
+  const [title, setTitleState] = useState('');
   const [loading, setLoading] = useState(true);
   const [joined, setJoined] = useState(false);
 
-  // Keep ref in sync for use inside stable callbacks
   participantsRef.current = participants;
 
   useEffect(() => {
@@ -41,7 +41,13 @@ export function useRoom(roomId: string) {
     const participantsColRef = collection(db, 'rooms', roomId, 'participants');
 
     const unsubRoom = onSnapshot(roomDocRef, (snap) => {
-      setRevealed(snap.exists() ? (snap.data().revealed ?? false) : false);
+      if (snap.exists()) {
+        setRevealed(snap.data().revealed ?? false);
+        setTitleState(snap.data().title ?? '');
+      } else {
+        setRevealed(false);
+        setTitleState('');
+      }
       setLoading(false);
     });
 
@@ -60,7 +66,6 @@ export function useRoom(roomId: string) {
       deleteDoc(participantDocRef).catch(() => {});
     };
 
-    // Remove participant when tab is hidden (covers most close/switch cases)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') cleanup();
     };
@@ -78,16 +83,12 @@ export function useRoom(roomId: string) {
     async (name: string) => {
       const roomDocRef = doc(db, 'rooms', roomId);
       const participantDocRef = doc(db, 'rooms', roomId, 'participants', myId);
-
-      // Create room if it doesn't exist yet
       await setDoc(roomDocRef, { revealed: false }, { merge: true });
-
       await setDoc(participantDocRef, {
         name: name.trim().slice(0, 30),
         vote: null,
         joinedAt: serverTimestamp(),
       });
-
       setJoined(true);
     },
     [roomId, myId],
@@ -97,9 +98,7 @@ export function useRoom(roomId: string) {
     async (value: string) => {
       const myParticipant = participantsRef.current.find((p) => p.id === myId);
       const currentVote = myParticipant?.vote ?? null;
-      // Toggle: clicking the same card again deselects it
       const newVote = currentVote === value ? null : value;
-
       const participantDocRef = doc(db, 'rooms', roomId, 'participants', myId);
       await updateDoc(participantDocRef, { vote: newVote });
     },
@@ -128,5 +127,25 @@ export function useRoom(roomId: string) {
     [roomId, myId],
   );
 
-  return { myId, participants, revealed, loading, joined, join, vote, reveal, newRound, changeName };
+  const setTitle = useCallback(
+    async (newTitle: string) => {
+      await updateDoc(doc(db, 'rooms', roomId), { title: newTitle.slice(0, 60) });
+    },
+    [roomId],
+  );
+
+  return {
+    myId,
+    participants,
+    revealed,
+    title,
+    loading,
+    joined,
+    join,
+    vote,
+    reveal,
+    newRound,
+    changeName,
+    setTitle,
+  };
 }
