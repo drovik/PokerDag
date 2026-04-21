@@ -1,15 +1,17 @@
 import type { Participant } from '../types';
 
+type OutlierType = 'low' | 'high' | null;
+
 type PokerTableProps = {
   participants: Participant[];
   myId: string;
   revealed: boolean;
+  outliers: { low: Set<string>; high: Set<string> };
   onReveal: () => void;
   onNewRound: () => void;
 };
 
 function seatPosition(index: number, total: number) {
-  // Distribute seats evenly around an ellipse, starting from top-center
   const angle = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
   return {
     left: `${50 + 44 * Math.cos(angle)}%`,
@@ -39,13 +41,14 @@ function Seat({
   participant,
   isMe,
   revealed,
+  outlierType,
 }: {
   participant: Participant;
   isMe: boolean;
   revealed: boolean;
+  outlierType: OutlierType;
 }) {
   const hasVoted = participant.vote !== null;
-  // My own vote is always visible to me; others' only after reveal
   const showValue = revealed || isMe;
 
   let cardClass =
@@ -57,17 +60,23 @@ function Seat({
     cardClass += ' bg-slate-800/50 border-slate-600/40 text-slate-600';
     cardContent = '–';
   } else if (showValue) {
-    cardClass += ' bg-white border-slate-300 text-slate-900 shadow-lg';
+    // Outlier cards get a tinted border
+    if (outlierType === 'low') {
+      cardClass += ' bg-white border-amber-400 text-slate-900 shadow-lg shadow-amber-500/20';
+    } else if (outlierType === 'high') {
+      cardClass += ' bg-white border-rose-400 text-slate-900 shadow-lg shadow-rose-500/20';
+    } else {
+      cardClass += ' bg-white border-slate-300 text-slate-900 shadow-lg';
+    }
     cardContent = participant.vote!;
   } else {
-    // Card back — voted but not yet revealed
     cardClass += ' border-indigo-500/60';
     cardStyle = CARD_BACK;
     cardContent = '';
   }
 
   return (
-    <div className="flex flex-col items-center gap-1.5 pointer-events-none select-none">
+    <div className="flex flex-col items-center gap-1 pointer-events-none select-none">
       <div className={cardClass} style={cardStyle}>
         {cardContent}
       </div>
@@ -85,6 +94,18 @@ function Seat({
         <span className="text-[11px] text-slate-400 whitespace-nowrap max-w-[72px] truncate">
           {participant.name}
         </span>
+        {outlierType && (
+          <span
+            className={[
+              'text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide',
+              outlierType === 'low'
+                ? 'bg-amber-900/70 text-amber-400'
+                : 'bg-rose-900/70 text-rose-400',
+            ].join(' ')}
+          >
+            {outlierType === 'low' ? '▼ Low' : '▲ High'}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -94,6 +115,7 @@ export function PokerTable({
   participants,
   myId,
   revealed,
+  outliers,
   onReveal,
   onNewRound,
 }: PokerTableProps) {
@@ -106,15 +128,12 @@ export function PokerTable({
     <div className="relative w-full" style={{ aspectRatio: '2.2 / 1' }}>
       {/* ── Felt surface ── */}
       <div className="absolute inset-[6%] rounded-[50%] shadow-[0_0_60px_rgba(0,0,0,0.6)] overflow-visible">
-        {/* Green felt */}
         <div
           className="absolute inset-0 rounded-[50%]"
           style={{
-            background:
-              'radial-gradient(ellipse at 40% 35%, #166534, #14532d 55%, #0f3d21)',
+            background: 'radial-gradient(ellipse at 40% 35%, #166534, #14532d 55%, #0f3d21)',
           }}
         />
-        {/* Wooden rail */}
         <div
           className="absolute rounded-[50%] pointer-events-none"
           style={{
@@ -122,16 +141,13 @@ export function PokerTable({
             border: '10px solid transparent',
             borderColor: '#78350f',
             boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.4)',
-            background:
-              'radial-gradient(ellipse at 30% 20%, #92400e, #78350f 50%, #451a03) border-box',
-            WebkitMask:
-              'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
+            background: 'radial-gradient(ellipse at 30% 20%, #92400e, #78350f 50%, #451a03) border-box',
+            WebkitMask: 'linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0)',
             WebkitMaskComposite: 'destination-out',
             maskComposite: 'exclude',
           }}
         />
 
-        {/* ── Centre content ── */}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           {revealed ? (
             <>
@@ -170,17 +186,25 @@ export function PokerTable({
       </div>
 
       {/* ── Seated participants ── */}
-      {participants.map((p, i) => (
-        <div
-          key={p.id}
-          className="absolute -translate-x-1/2 -translate-y-1/2"
-          style={seatPosition(i, participants.length)}
-        >
-          <Seat participant={p} isMe={p.id === myId} revealed={revealed} />
-        </div>
-      ))}
+      {participants.map((p, i) => {
+        const outlierType: OutlierType = revealed
+          ? outliers.low.has(p.id)
+            ? 'low'
+            : outliers.high.has(p.id)
+              ? 'high'
+              : null
+          : null;
+        return (
+          <div
+            key={p.id}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={seatPosition(i, participants.length)}
+          >
+            <Seat participant={p} isMe={p.id === myId} revealed={revealed} outlierType={outlierType} />
+          </div>
+        );
+      })}
 
-      {/* Empty table hint */}
       {total === 0 && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-green-700/60 text-sm">Waiting for players…</span>
