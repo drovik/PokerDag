@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { Participant } from '../types';
 
 type OutlierType = 'low' | 'high' | null;
@@ -10,6 +11,8 @@ type PokerTableProps = {
   onReveal: () => void;
   onNewRound: () => void;
 };
+
+const COUNTDOWN_SECS = 5;
 
 function seatPosition(index: number, total: number) {
   const angle = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
@@ -110,8 +113,26 @@ export function PokerTable({
 }: PokerTableProps) {
   const votedCount = participants.filter((p) => p.vote !== null).length;
   const total = participants.length;
-  const canReveal = votedCount > 0;
+  const allVoted = total > 0 && votedCount === total;
   const average = revealed ? getAverage(participants) : null;
+
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!allVoted || revealed) {
+      setCountdown(null);
+      return;
+    }
+    setCountdown(COUNTDOWN_SECS);
+    const tick = setInterval(() => {
+      setCountdown((n) => (n !== null && n > 1 ? n - 1 : null));
+    }, 1000);
+    const revealTimer = setTimeout(onReveal, COUNTDOWN_SECS * 1000);
+    return () => {
+      clearInterval(tick);
+      clearTimeout(revealTimer);
+    };
+  }, [allVoted, revealed, onReveal]);
 
   return (
     <div className="relative w-full" style={{ aspectRatio: '2.2 / 1' }}>
@@ -135,7 +156,7 @@ export function PokerTable({
           }}
         />
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
           {revealed ? (
             <>
               {average && (
@@ -156,6 +177,27 @@ export function PokerTable({
                 New Round
               </button>
             </>
+          ) : countdown !== null ? (
+            <>
+              <div
+                className="text-[10px] uppercase tracking-widest"
+                style={{ color: 'var(--felt-text)' }}
+              >
+                All voted!
+              </div>
+              <div
+                key={countdown}
+                className="text-6xl font-bold text-white drop-shadow-lg countdown-pop"
+              >
+                {countdown}
+              </div>
+              <button
+                onClick={onReveal}
+                className="text-[10px] text-white/50 hover:text-white/90 underline transition-colors"
+              >
+                reveal now
+              </button>
+            </>
           ) : (
             <>
               {total > 0 && (
@@ -168,7 +210,7 @@ export function PokerTable({
               )}
               <button
                 onClick={onReveal}
-                disabled={!canReveal}
+                disabled={votedCount === 0}
                 className="px-6 py-2 bg-[var(--accent)] hover:bg-[var(--accent-h)] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors shadow-lg"
               >
                 Reveal
