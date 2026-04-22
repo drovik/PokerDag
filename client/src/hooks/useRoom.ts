@@ -26,6 +26,7 @@ function getSessionId(): string {
 export function useRoom(roomId: string) {
   const myId = useRef(getSessionId()).current;
   const participantsRef = useRef<Participant[]>([]);
+  const joinedRef = useRef(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [revealed, setRevealed] = useState(false);
   const [title, setTitleState] = useState('');
@@ -66,15 +67,47 @@ export function useRoom(roomId: string) {
       deleteDoc(participantDocRef).catch(() => {});
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') cleanup();
+    // Re-add ourselves if we were removed while the tab was hidden.
+    // Reads name from localStorage so no stale closure needed.
+    const rejoin = () => {
+      if (!joinedRef.current) return;
+      const name = localStorage.getItem('pokerdag-name');
+      if (!name) return;
+      const missing = !participantsRef.current.some((p) => p.id === myId);
+      if (missing) {
+        setDoc(participantDocRef, {
+          name: name.trim().slice(0, 30),
+          vote: null,
+          joinedAt: serverTimestamp(),
+        }).catch(() => {});
+      }
     };
+
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // iOS fires "hidden" on any app switch or screen lock — wait 30 s
+        // before actually removing so brief interruptions don't kick people.
+        hideTimer = setTimeout(cleanup, 30_000);
+      } else {
+        if (hideTimer !== null) {
+          clearTimeout(hideTimer);
+          hideTimer = null;
+        }
+        // Give Firestore ~1.5 s to reconnect and update the participants
+        // list, then rejoin if our document was removed.
+        setTimeout(rejoin, 1500);
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       unsubRoom();
       unsubParticipants();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (hideTimer !== null) clearTimeout(hideTimer);
       cleanup();
     };
   }, [roomId, myId]);
@@ -89,6 +122,7 @@ export function useRoom(roomId: string) {
         vote: null,
         joinedAt: serverTimestamp(),
       });
+      joinedRef.current = true;
       setJoined(true);
     },
     [roomId, myId],
