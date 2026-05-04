@@ -12,6 +12,16 @@ import type { Participant } from '../types';
 
 const CARD_ORDER = ['0.5', '1', '2', '3', '5', '8', '13', '21', '∞', '?', '☕'];
 
+const PRESENTER_KEYS: Record<string, string> = {
+  '0': '0.5', '1': '1', '2': '2', '3': '3',
+  '5': '5', '8': '8', 't': '13', 'j': '21',
+  'i': '∞', '?': '?', 'c': '☕',
+};
+const KEY_LABELS: [string, string][] = [
+  ['0', '0.5'], ['1', '1'], ['2', '2'], ['3', '3'], ['5', '5'], ['8', '8'],
+  ['T', '13'], ['J', '21'], ['I', '∞'], ['?', '?'], ['C', '☕'],
+];
+
 function RoomTitle({ title, onSave }: { title: string; onSave: (t: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(title);
@@ -146,6 +156,33 @@ function ResultsStats({ participants }: { participants: Participant[] }) {
   );
 }
 
+function PresenterKeyLegend({ myVote }: { myVote: string | null }) {
+  return (
+    <div className="flex flex-col items-center gap-3 py-2">
+      <div className="flex flex-wrap justify-center gap-2">
+        {KEY_LABELS.map(([key, value]) => (
+          <div key={value} className="flex flex-col items-center gap-1">
+            <span
+              className={[
+                'w-10 h-12 flex items-center justify-center rounded-xl border-2 text-base font-bold transition-all',
+                myVote === value
+                  ? 'btn-accent border-[var(--accent)] scale-105 shadow-lg'
+                  : 'bg-[var(--bg-3)] border-[var(--border)] text-[var(--text)] opacity-50',
+              ].join(' ')}
+            >
+              {value}
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)] font-mono">{key}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-[var(--text-muted)]">
+        {myVote ? `Voted · press another key to change` : 'Press a key to vote'}
+      </p>
+    </div>
+  );
+}
+
 export function Room() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -163,6 +200,18 @@ export function Room() {
       room.join(name, pendingObserver);
     }
   }, [room.loading, room.joined, name, room.join, pendingObserver]);
+
+  useEffect(() => {
+    if (!presenterMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (room.revealed) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const value = PRESENTER_KEYS[e.key.toLowerCase()];
+      if (value) { room.vote(value); e.preventDefault(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [presenterMode, room.revealed, room.vote]);
 
   const handleNameSubmit = useCallback(
     (newName: string, observer = false) => {
@@ -292,7 +341,9 @@ export function Room() {
                         👁️ Watch only
                       </button>
                     </div>
-                    <CardGrid myVote={myVote} onVote={room.vote} presenterMode={presenterMode} />
+                    {presenterMode
+                      ? <PresenterKeyLegend myVote={myVote} />
+                      : <CardGrid myVote={myVote} onVote={room.vote} />}
                   </>
                 )}
               </div>
