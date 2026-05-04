@@ -7,7 +7,7 @@ import { CardGrid } from '../components/CardGrid';
 import { PokerTable } from '../components/PokerTable';
 import type { Participant } from '../types';
 
-const CARD_ORDER = ['1', '2', '3', '5', '8', '13', '21', '?', '☕'];
+const CARD_ORDER = ['0.5', '1', '2', '3', '5', '8', '13', '21', '∞', '?', '☕'];
 
 function RoomTitle({ title, onSave }: { title: string; onSave: (t: string) => void }) {
   const [editing, setEditing] = useState(false);
@@ -52,7 +52,7 @@ function RoomTitle({ title, onSave }: { title: string; onSave: (t: string) => vo
 
 function getOutliers(participants: Participant[]): { low: Set<string>; high: Set<string> } {
   const voters = participants.filter((p) => !p.observer);
-  const numeric = voters.filter((p) => p.vote !== null && !isNaN(Number(p.vote)));
+  const numeric = voters.filter((p) => p.vote !== null && isFinite(Number(p.vote)));
   const empty = { low: new Set<string>(), high: new Set<string>() };
   if (numeric.length < 2) return empty;
   const vals = numeric.map((p) => Number(p.vote));
@@ -84,7 +84,7 @@ function ResultsStats({ participants }: { participants: Participant[] }) {
 
   const nums = voted
     .map((p) => p.vote)
-    .filter((v): v is string => !isNaN(Number(v)))
+    .filter((v): v is string => isFinite(Number(v)))
     .map(Number);
   const min = nums.length > 0 ? Math.min(...nums) : null;
   const max = nums.length > 0 ? Math.max(...nums) : null;
