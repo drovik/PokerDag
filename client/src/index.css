@@ -122,31 +122,31 @@ body {
   --logo-color:       #D97757;
 }
 
-/* ── Theme: iOS ─────────────────────────────────────────── */
-[data-theme="ios"] {
-  --bg:               #F2F2F7;
-  --bg-2:             #FFFFFF;
-  --bg-3:             #E5E5EA;
-  --border:           #C6C6C8;
-  --border-focus:     #007AFF;
-  --text:             #000000;
-  --text-2:           #3C3C43;
-  --text-3:           #6C6C70;
-  --text-muted:       #AEAEB2;
-  --accent:           #007AFF;
-  --accent-h:         #0066D6;
+/* ── Theme: Navy ─────────────────────────────────────────── */
+[data-theme="navy"] {
+  --bg:               #070F1E;
+  --bg-2:             #0D1B33;
+  --bg-3:             #132444;
+  --border:           #1C3056;
+  --border-focus:     #0A84FF;
+  --text:             #E8F0FF;
+  --text-2:           #8BAAD4;
+  --text-3:           #5A7BA8;
+  --text-muted:       #304D74;
+  --accent:           #0A84FF;
+  --accent-h:         #0070E0;
   --accent-fg:        #FFFFFF;
-  --avatar-bg:        #007AFF;
+  --avatar-bg:        #0A84FF;
 
-  --felt-bg:          radial-gradient(ellipse at 40% 35%, #34C759, #2DB84C 55%, #1E8A36);
-  --felt-text:        rgba(255, 255, 255, 0.45);
-  --rail-bg:          radial-gradient(ellipse at 30% 20%, #8E8E93, #636366 50%, #48484A);
-  --rail-border:      #6C6C70;
+  --felt-bg:          radial-gradient(ellipse at 40% 35%, #0A2A4A, #071E38 55%, #030D1C);
+  --felt-text:        rgba(138, 180, 248, 0.35);
+  --rail-bg:          radial-gradient(ellipse at 30% 20%, #C9A227, #B8960C 50%, #8A6D00);
+  --rail-border:      #C9A227;
 
-  --card-back-bg:     #007AFF;
-  --card-back-stripe: rgba(255, 255, 255, 0.15);
+  --card-back-bg:     #0A2A52;
+  --card-back-stripe: rgba(100, 160, 255, 0.15);
 
-  --logo-color:       #007AFF;
+  --logo-color:       #0A84FF;
 }
 
 /* ── Shared utility classes ──────────────────────────────────── */
