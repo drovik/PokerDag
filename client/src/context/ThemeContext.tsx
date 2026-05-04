@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-export type Theme = 'dark' | 'light' | 'vegas' | 'claude';
+export type Theme = 'dark' | 'light' | 'vegas' | 'claude' | 'ios';
 
 const ThemeContext = createContext<{ theme: Theme; setTheme: (t: Theme) => void }>({
   theme: 'dark',

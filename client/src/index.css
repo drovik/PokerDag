@@ -111,7 +111,7 @@ body {
   --accent-fg:        #ffffff;
   --avatar-bg:        #D97757;
 
-  --felt-bg:          radial-gradient(ellipse at 40% 35%, #7B5E3A, #6B4E2C 55%, #533B1E);  
+  --felt-bg:          radial-gradient(ellipse at 40% 35%, #7B5E3A, #6B4E2C 55%, #533B1E);
   --felt-text:        rgba(255, 210, 150, 0.6);
   --rail-bg:          radial-gradient(ellipse at 30% 20%, #3D2B1F, #2E1F14 50%, #1E1209);
   --rail-border:      #5C3D28;
@@ -120,6 +120,33 @@ body {
   --card-back-stripe: rgba(255, 200, 160, 0.2);
 
   --logo-color:       #D97757;
+}
+
+/* ── Theme: iOS ─────────────────────────────────────────── */
+[data-theme="ios"] {
+  --bg:               #F2F2F7;
+  --bg-2:             #FFFFFF;
+  --bg-3:             #E5E5EA;
+  --border:           #C6C6C8;
+  --border-focus:     #007AFF;
+  --text:             #000000;
+  --text-2:           #3C3C43;
+  --text-3:           #6C6C70;
+  --text-muted:       #AEAEB2;
+  --accent:           #007AFF;
+  --accent-h:         #0066D6;
+  --accent-fg:        #FFFFFF;
+  --avatar-bg:        #007AFF;
+
+  --felt-bg:          radial-gradient(ellipse at 40% 35%, #34C759, #2DB84C 55%, #1E8A36);
+  --felt-text:        rgba(255, 255, 255, 0.45);
+  --rail-bg:          radial-gradient(ellipse at 30% 20%, #8E8E93, #636366 50%, #48484A);
+  --rail-border:      #6C6C70;
+
+  --card-back-bg:     #007AFF;
+  --card-back-stripe: rgba(255, 255, 255, 0.15);
+
+  --logo-color:       #007AFF;
 }
 
 /* ── Shared utility classes ──────────────────────────────────── */

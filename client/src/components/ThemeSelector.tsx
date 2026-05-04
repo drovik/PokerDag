@@ -5,6 +5,7 @@ const THEMES = [
   { id: 'light',  label: 'Light',     icon: '☀️' },
   { id: 'vegas',  label: 'Las Vegas', icon: '🎰' },
   { id: 'claude', label: 'Claude',    icon: '✦'  },
+  { id: 'ios',    label: 'iOS',       icon: '📱' },
 ] as const;
 
 export function ThemeSelector() {
