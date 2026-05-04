@@ -15,10 +15,10 @@ import type { Participant } from '../types';
 const SESSION_KEY = 'pokerdag-session-id';
 
 function getSessionId(): string {
-  let id = sessionStorage.getItem(SESSION_KEY);
+  let id = localStorage.getItem(SESSION_KEY);
   if (!id) {
     id = Math.random().toString(36).slice(2, 10);
-    sessionStorage.setItem(SESSION_KEY, id);
+    localStorage.setItem(SESSION_KEY, id);
   }
   return id;
 }
@@ -26,6 +26,8 @@ function getSessionId(): string {
 export function useRoom(roomId: string) {
   const myId = useRef(getSessionId()).current;
   const participantsRef = useRef<Participant[]>([]);
+  const joinedRef = useRef(false);
+  const observerRef = useRef(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [revealed, setRevealed] = useState(false);
   const [title, setTitleState] = useState('');
@@ -56,6 +58,7 @@ export function useRoom(roomId: string) {
         id: d.id,
         name: d.data().name as string,
         vote: d.data().vote as string | null,
+        observer: d.data().observer as boolean | undefined,
       }));
       setParticipants(ps);
     });
@@ -66,29 +69,59 @@ export function useRoom(roomId: string) {
       deleteDoc(participantDocRef).catch(() => {});
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') cleanup();
+    const rejoin = () => {
+      if (!joinedRef.current) return;
+      const name = localStorage.getItem('pokerdag-name');
+      if (!name) return;
+      const missing = !participantsRef.current.some((p) => p.id === myId);
+      if (missing) {
+        setDoc(participantDocRef, {
+          name: name.trim().slice(0, 30),
+          vote: null,
+          observer: observerRef.current,
+          joinedAt: serverTimestamp(),
+        }).catch(() => {});
+      }
     };
+
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        hideTimer = setTimeout(cleanup, 300_000);
+      } else {
+        if (hideTimer !== null) {
+          clearTimeout(hideTimer);
+          hideTimer = null;
+        }
+        setTimeout(rejoin, 1500);
+      }
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       unsubRoom();
       unsubParticipants();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (hideTimer !== null) clearTimeout(hideTimer);
       cleanup();
     };
   }, [roomId, myId]);
 
   const join = useCallback(
-    async (name: string) => {
+    async (name: string, observer = false) => {
       const roomDocRef = doc(db, 'rooms', roomId);
       const participantDocRef = doc(db, 'rooms', roomId, 'participants', myId);
       await setDoc(roomDocRef, { revealed: false }, { merge: true });
       await setDoc(participantDocRef, {
         name: name.trim().slice(0, 30),
         vote: null,
+        observer,
         joinedAt: serverTimestamp(),
       });
+      observerRef.current = observer;
+      joinedRef.current = true;
       setJoined(true);
     },
     [roomId, myId],
@@ -134,6 +167,17 @@ export function useRoom(roomId: string) {
     [roomId],
   );
 
+  const setObserver = useCallback(
+    async (observer: boolean) => {
+      observerRef.current = observer;
+      await updateDoc(doc(db, 'rooms', roomId, 'participants', myId), {
+        observer,
+        ...(observer ? { vote: null } : {}),
+      });
+    },
+    [roomId, myId],
+  );
+
   return {
     myId,
     participants,
@@ -147,5 +191,6 @@ export function useRoom(roomId: string) {
     newRound,
     changeName,
     setTitle,
+    setObserver,
   };
 }
