@@ -6,8 +6,10 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  getDoc,
   serverTimestamp,
   writeBatch,
+  enableNetwork,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Participant } from '../types';
@@ -86,6 +88,18 @@ export function useRoom(roomId: string) {
 
     let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Force-read the latest room state — bypasses a stale WebSocket listener
+    // (Safari/WebKit silently drops the Firestore connection after idle periods)
+    const syncRoomState = () => {
+      enableNetwork(db).catch(() => {});
+      getDoc(roomDocRef).then((snap) => {
+        if (snap.exists()) {
+          setRevealed(snap.data().revealed ?? false);
+          setTitleState(snap.data().title ?? '');
+        }
+      }).catch(() => {});
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         hideTimer = setTimeout(cleanup, 300_000);
@@ -94,16 +108,21 @@ export function useRoom(roomId: string) {
           clearTimeout(hideTimer);
           hideTimer = null;
         }
+        syncRoomState();
         setTimeout(rejoin, 1500);
       }
     };
 
+    const handleOnline = () => syncRoomState();
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
 
     return () => {
       unsubRoom();
       unsubParticipants();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
       if (hideTimer !== null) clearTimeout(hideTimer);
       cleanup();
     };

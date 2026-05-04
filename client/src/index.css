@@ -14,7 +14,7 @@ body {
   color: var(--text);
 }
 
-/* ── Theme: Dark (default) ─────────────────────────────────── */
+/* ── Theme: Dark (default) ────────────────────────────────────── */
 :root, [data-theme="dark"] {
   --bg:               #020617;
   --bg-2:             #0f172a;
@@ -41,7 +41,7 @@ body {
   --logo-color:       #818cf8;
 }
 
-/* ── Theme: Light ──────────────────────────────────────────── */
+/* ── Theme: Light ─────────────────────────────────────── */
 [data-theme="light"] {
   --bg:               #f8fafc;
   --bg-2:             #ffffff;
@@ -68,7 +68,7 @@ body {
   --logo-color:       #4f46e5;
 }
 
-/* ── Theme: Las Vegas ──────────────────────────────────────── */
+/* ── Theme: Las Vegas ────────────────────────────────────── */
 [data-theme="vegas"] {
   --bg:               #0d0014;
   --bg-2:             #130020;
@@ -95,7 +95,7 @@ body {
   --logo-color:       #ff0080;
 }
 
-/* ── Shared utility classes ────────────────────────────────── */
+/* ── Shared utility classes ──────────────────────────────────── */
 @layer components {
   .btn-accent {
     background-color: var(--accent);

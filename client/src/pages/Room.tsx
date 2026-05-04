@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useRoom } from '../hooks/useRoom';
+import { useAzureDevOps } from '../hooks/useAzureDevOps';
+import type { AzureWorkItem } from '../hooks/useAzureDevOps';
 import { Header } from '../components/Header';
 import { NameModal } from '../components/NameModal';
 import { CardGrid } from '../components/CardGrid';
 import { PokerTable } from '../components/PokerTable';
+import { AzureDevOpsPanel } from '../components/AzureDevOpsPanel';
 import type { Participant } from '../types';
 
 const CARD_ORDER = ['0.5', '1', '2', '3', '5', '8', '13', '21', '∞', '?', '☕'];
@@ -147,11 +150,13 @@ export function Room() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const room = useRoom(roomId ?? '');
+  const ado = useAzureDevOps();
 
   const [name, setName] = useState(() => localStorage.getItem('pokerdag-name') ?? '');
   const [showNameEdit, setShowNameEdit] = useState(false);
   const [presenterMode, setPresenterMode] = useState(false);
   const [pendingObserver, setPendingObserver] = useState(false);
+  const [showAdoPanel, setShowAdoPanel] = useState(false);
 
   useEffect(() => {
     if (!room.loading && !room.joined && name) {
@@ -189,6 +194,32 @@ export function Room() {
   const amObserver = myParticipant?.observer ?? false;
   const outliers = revealed ? getOutliers(participants) : { low: new Set<string>(), high: new Set<string>() };
 
+  // Consensus = all voters picked the same card
+  const voters = participants.filter((p) => !p.observer);
+  const voted = voters.filter((p) => p.vote !== null);
+  const uniqueVotes = new Set(voted.map((p) => p.vote));
+  const consensusValue =
+    revealed && voted.length > 0 && uniqueVotes.size === 1
+      ? [...uniqueVotes][0]
+      : null;
+
+  const handleAdoSelectItem = useCallback(
+    (item: AzureWorkItem) => {
+      room.setTitle(`#${item.id} ${item.title}`);
+      room.newRound();
+      ado.selectItem(item);
+    },
+    [room, ado],
+  );
+
+  const handleAdoSaveEstimate = useCallback(
+    async (item: AzureWorkItem, points: string) => {
+      await ado.saveEstimate(item.id, points);
+      ado.markVoted(item.id);
+    },
+    [ado],
+  );
+
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col">
       <Header roomId={roomId} myName={name} onEditName={() => setShowNameEdit(true)} />
@@ -204,9 +235,36 @@ export function Room() {
           </div>
         ) : (
           <>
-            <div className="mb-4">
+            <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
               <RoomTitle title={title} onSave={room.setTitle} />
+              <button
+                onClick={() => setShowAdoPanel((v) => !v)}
+                title="Azure DevOps integration"
+                className={[
+                  'flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border transition-all',
+                  showAdoPanel
+                    ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10'
+                    : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-focus)] hover:text-[var(--text-3)]',
+                ].join(' ')}
+              >
+                🔗 Azure DevOps
+                {ado.configured && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+                )}
+              </button>
             </div>
+
+            {showAdoPanel && (
+              <div className="mb-5">
+                <AzureDevOpsPanel
+                  ado={ado}
+                  revealed={revealed}
+                  consensusValue={consensusValue}
+                  onSelectItem={handleAdoSelectItem}
+                  onSaveEstimate={handleAdoSaveEstimate}
+                />
+              </div>
+            )}
 
             <PokerTable
               participants={participants}
