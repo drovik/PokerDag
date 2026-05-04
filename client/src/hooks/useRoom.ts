@@ -15,10 +15,10 @@ import type { Participant } from '../types';
 const SESSION_KEY = 'pokerdag-session-id';
 
 function getSessionId(): string {
-  let id = sessionStorage.getItem(SESSION_KEY);
+  let id = localStorage.getItem(SESSION_KEY);
   if (!id) {
     id = Math.random().toString(36).slice(2, 10);
-    sessionStorage.setItem(SESSION_KEY, id);
+    localStorage.setItem(SESSION_KEY, id);
   }
   return id;
 }
