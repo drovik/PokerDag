@@ -87,9 +87,9 @@ export function useRoom(roomId: string) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        // iOS fires "hidden" on any app switch or screen lock — wait 30 s
-        // before actually removing so brief interruptions don't kick people.
-        hideTimer = setTimeout(cleanup, 30_000);
+        // Wait 5 minutes before removing — covers phone calls, quick
+        // context-switches and screen locks without kicking active participants.
+        hideTimer = setTimeout(cleanup, 300_000);
       } else {
         if (hideTimer !== null) {
           clearTimeout(hideTimer);
