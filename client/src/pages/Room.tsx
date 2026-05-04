@@ -51,7 +51,8 @@ function RoomTitle({ title, onSave }: { title: string; onSave: (t: string) => vo
 }
 
 function getOutliers(participants: Participant[]): { low: Set<string>; high: Set<string> } {
-  const numeric = participants.filter((p) => p.vote !== null && !isNaN(Number(p.vote)));
+  const voters = participants.filter((p) => !p.observer);
+  const numeric = voters.filter((p) => p.vote !== null && !isNaN(Number(p.vote)));
   const empty = { low: new Set<string>(), high: new Set<string>() };
   if (numeric.length < 2) return empty;
   const vals = numeric.map((p) => Number(p.vote));
@@ -65,8 +66,9 @@ function getOutliers(participants: Participant[]): { low: Set<string>; high: Set
 }
 
 function ResultsStats({ participants }: { participants: Participant[] }) {
+  const voters = participants.filter((p) => !p.observer);
   const voteCounts = new Map<string, number>();
-  for (const p of participants) {
+  for (const p of voters) {
     if (p.vote !== null) voteCounts.set(p.vote, (voteCounts.get(p.vote) ?? 0) + 1);
   }
   if (voteCounts.size === 0) return null;
@@ -76,7 +78,7 @@ function ResultsStats({ participants }: { participants: Participant[] }) {
   );
   const maxCount = Math.max(...voteCounts.values());
   const mostCommon = sorted.filter(([, c]) => c === maxCount).map(([v]) => v);
-  const voted = participants.filter((p) => p.vote !== null);
+  const voted = voters.filter((p) => p.vote !== null);
   const isConsensus =
     voted.length > 1 && mostCommon.length === 1 && voted.every((p) => p.vote === mostCommon[0]);
 
@@ -90,7 +92,7 @@ function ResultsStats({ participants }: { participants: Participant[] }) {
   const highSpread = spread !== null && spread >= 5;
 
   const voterNames = (value: string) =>
-    participants.filter((p) => p.vote === value).map((p) => p.name);
+    voters.filter((p) => p.vote === value).map((p) => p.name);
 
   return (
     <div className="mt-4 bg-[var(--bg-2)] border border-[var(--border)] rounded-2xl p-4 space-y-4">
@@ -149,17 +151,19 @@ export function Room() {
   const [name, setName] = useState(() => localStorage.getItem('pokerdag-name') ?? '');
   const [showNameEdit, setShowNameEdit] = useState(false);
   const [presenterMode, setPresenterMode] = useState(false);
+  const [pendingObserver, setPendingObserver] = useState(false);
 
   useEffect(() => {
     if (!room.loading && !room.joined && name) {
-      room.join(name);
+      room.join(name, pendingObserver);
     }
-  }, [room.loading, room.joined, name, room.join]);
+  }, [room.loading, room.joined, name, room.join, pendingObserver]);
 
   const handleNameSubmit = useCallback(
-    (newName: string) => {
+    (newName: string, observer = false) => {
       localStorage.setItem('pokerdag-name', newName);
       setName(newName);
+      setPendingObserver(observer);
       if (room.joined) room.changeName(newName);
       setShowNameEdit(false);
     },
@@ -182,6 +186,7 @@ export function Room() {
   const { participants, revealed, title, loading } = room;
   const myParticipant = participants.find((p) => p.id === room.myId);
   const myVote = myParticipant?.vote ?? null;
+  const amObserver = myParticipant?.observer ?? false;
   const outliers = revealed ? getOutliers(participants) : { low: new Set<string>(), high: new Set<string>() };
 
   return (
@@ -217,21 +222,41 @@ export function Room() {
 
             {!revealed && (
               <div className="mt-6">
-                <div className="flex justify-center mb-3">
-                  <button
-                    onClick={() => setPresenterMode((m) => !m)}
-                    title="Hide your vote while screen sharing"
-                    className={[
-                      'text-xs px-3 py-1 rounded-full border transition-all flex items-center gap-1.5',
-                      presenterMode
-                        ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10'
-                        : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text-3)]',
-                    ].join(' ')}
-                  >
-                    🖥️ {presenterMode ? 'Screen sharing — vote hidden' : 'Screen sharing'}
-                  </button>
-                </div>
-                <CardGrid myVote={myVote} onVote={room.vote} presenterMode={presenterMode} />
+                {amObserver ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <p className="text-sm text-[var(--text-muted)]">You're watching this round</p>
+                    <button
+                      onClick={() => room.setObserver(false)}
+                      className="px-5 py-2 btn-accent font-semibold rounded-xl text-sm"
+                    >
+                      🃏 Join voting
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-center gap-2 mb-3">
+                      <button
+                        onClick={() => setPresenterMode((m) => !m)}
+                        title="Hide your vote while screen sharing"
+                        className={[
+                          'text-xs px-3 py-1 rounded-full border transition-all',
+                          presenterMode
+                            ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10'
+                            : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text-3)]',
+                        ].join(' ')}
+                      >
+                        🖥️ {presenterMode ? 'Screen sharing on' : 'Screen sharing'}
+                      </button>
+                      <button
+                        onClick={() => room.setObserver(true)}
+                        className="text-xs px-3 py-1 rounded-full border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text-3)] transition-all"
+                      >
+                        👁️ Watch only
+                      </button>
+                    </div>
+                    <CardGrid myVote={myVote} onVote={room.vote} presenterMode={presenterMode} />
+                  </>
+                )}
               </div>
             )}
           </>
