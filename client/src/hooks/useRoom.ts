@@ -114,15 +114,18 @@ export function useRoom(roomId: string) {
     };
 
     const handleOnline = () => syncRoomState();
+    const handleFocus = () => syncRoomState();
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('online', handleOnline);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       unsubRoom();
       unsubParticipants();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('focus', handleFocus);
       if (hideTimer !== null) clearTimeout(hideTimer);
       cleanup();
     };

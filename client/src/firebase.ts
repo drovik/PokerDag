@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
@@ -13,5 +13,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// Safari silently drops WebSocket connections; long-polling uses plain HTTP and is reliable across all browsers
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
 export const analytics = getAnalytics(app);
