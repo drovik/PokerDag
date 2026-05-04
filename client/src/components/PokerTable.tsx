@@ -26,7 +26,7 @@ function seatPosition(index: number, total: number) {
 function getAverage(participants: Participant[]): string | null {
   const nums = participants
     .map((p) => p.vote)
-    .filter((v): v is string => v !== null && !isNaN(Number(v)))
+    .filter((v): v is string => v !== null && isFinite(Number(v)))
     .map(Number);
   if (nums.length === 0) return null;
   const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
