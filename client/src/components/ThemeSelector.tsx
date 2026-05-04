@@ -1,9 +1,10 @@
 import { useTheme } from '../context/ThemeContext';
 
 const THEMES = [
-  { id: 'dark',  label: 'Dark',      icon: '🌙' },
-  { id: 'light', label: 'Light',     icon: '☀️' },
-  { id: 'vegas', label: 'Las Vegas', icon: '🎰' },
+  { id: 'dark',   label: 'Dark',      icon: '🌙' },
+  { id: 'light',  label: 'Light',     icon: '☀️' },
+  { id: 'vegas',  label: 'Las Vegas', icon: '🎰' },
+  { id: 'claude', label: 'Claude',    icon: '✦'  },
 ] as const;
 
 export function ThemeSelector() {

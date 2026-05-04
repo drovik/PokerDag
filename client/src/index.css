@@ -95,6 +95,33 @@ body {
   --logo-color:       #ff0080;
 }
 
+/* ── Theme: Claude ─────────────────────────────────────── */
+[data-theme="claude"] {
+  --bg:               #FAF9F7;
+  --bg-2:             #F5F3EF;
+  --bg-3:             #EDE9E3;
+  --border:           #D4C9BC;
+  --border-focus:     #D97757;
+  --text:             #2D1F14;
+  --text-2:           #6B5140;
+  --text-3:           #9C8070;
+  --text-muted:       #B8A898;
+  --accent:           #D97757;
+  --accent-h:         #C4664A;
+  --accent-fg:        #ffffff;
+  --avatar-bg:        #D97757;
+
+  --felt-bg:          radial-gradient(ellipse at 40% 35%, #7B5E3A, #6B4E2C 55%, #533B1E);  
+  --felt-text:        rgba(255, 210, 150, 0.6);
+  --rail-bg:          radial-gradient(ellipse at 30% 20%, #3D2B1F, #2E1F14 50%, #1E1209);
+  --rail-border:      #5C3D28;
+
+  --card-back-bg:     #C96840;
+  --card-back-stripe: rgba(255, 200, 160, 0.2);
+
+  --logo-color:       #D97757;
+}
+
 /* ── Shared utility classes ──────────────────────────────────── */
 @layer components {
   .btn-accent {
