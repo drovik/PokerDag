@@ -27,6 +27,7 @@ export function useRoom(roomId: string) {
   const myId = useRef(getSessionId()).current;
   const participantsRef = useRef<Participant[]>([]);
   const joinedRef = useRef(false);
+  const observerRef = useRef(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [revealed, setRevealed] = useState(false);
   const [title, setTitleState] = useState('');
@@ -57,6 +58,7 @@ export function useRoom(roomId: string) {
         id: d.id,
         name: d.data().name as string,
         vote: d.data().vote as string | null,
+        observer: d.data().observer as boolean | undefined,
       }));
       setParticipants(ps);
     });
@@ -67,8 +69,6 @@ export function useRoom(roomId: string) {
       deleteDoc(participantDocRef).catch(() => {});
     };
 
-    // Re-add ourselves if we were removed while the tab was hidden.
-    // Reads name from localStorage so no stale closure needed.
     const rejoin = () => {
       if (!joinedRef.current) return;
       const name = localStorage.getItem('pokerdag-name');
@@ -78,6 +78,7 @@ export function useRoom(roomId: string) {
         setDoc(participantDocRef, {
           name: name.trim().slice(0, 30),
           vote: null,
+          observer: observerRef.current,
           joinedAt: serverTimestamp(),
         }).catch(() => {});
       }
@@ -87,16 +88,12 @@ export function useRoom(roomId: string) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        // Wait 5 minutes before removing — covers phone calls, quick
-        // context-switches and screen locks without kicking active participants.
         hideTimer = setTimeout(cleanup, 300_000);
       } else {
         if (hideTimer !== null) {
           clearTimeout(hideTimer);
           hideTimer = null;
         }
-        // Give Firestore ~1.5 s to reconnect and update the participants
-        // list, then rejoin if our document was removed.
         setTimeout(rejoin, 1500);
       }
     };
@@ -113,15 +110,17 @@ export function useRoom(roomId: string) {
   }, [roomId, myId]);
 
   const join = useCallback(
-    async (name: string) => {
+    async (name: string, observer = false) => {
       const roomDocRef = doc(db, 'rooms', roomId);
       const participantDocRef = doc(db, 'rooms', roomId, 'participants', myId);
       await setDoc(roomDocRef, { revealed: false }, { merge: true });
       await setDoc(participantDocRef, {
         name: name.trim().slice(0, 30),
         vote: null,
+        observer,
         joinedAt: serverTimestamp(),
       });
+      observerRef.current = observer;
       joinedRef.current = true;
       setJoined(true);
     },
@@ -168,6 +167,17 @@ export function useRoom(roomId: string) {
     [roomId],
   );
 
+  const setObserver = useCallback(
+    async (observer: boolean) => {
+      observerRef.current = observer;
+      await updateDoc(doc(db, 'rooms', roomId, 'participants', myId), {
+        observer,
+        ...(observer ? { vote: null } : {}),
+      });
+    },
+    [roomId, myId],
+  );
+
   return {
     myId,
     participants,
@@ -181,5 +191,6 @@ export function useRoom(roomId: string) {
     newRound,
     changeName,
     setTitle,
+    setObserver,
   };
 }
