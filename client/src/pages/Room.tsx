@@ -194,15 +194,6 @@ export function Room() {
   const amObserver = myParticipant?.observer ?? false;
   const outliers = revealed ? getOutliers(participants) : { low: new Set<string>(), high: new Set<string>() };
 
-  // Consensus = all voters picked the same card
-  const voters = participants.filter((p) => !p.observer);
-  const voted = voters.filter((p) => p.vote !== null);
-  const uniqueVotes = new Set(voted.map((p) => p.vote));
-  const consensusValue =
-    revealed && voted.length > 0 && uniqueVotes.size === 1
-      ? [...uniqueVotes][0]
-      : null;
-
   const handleAdoSelectItem = useCallback(
     (item: AzureWorkItem) => {
       room.setTitle(`#${item.id} ${item.title}`);
@@ -210,14 +201,6 @@ export function Room() {
       ado.selectItem(item);
     },
     [room, ado],
-  );
-
-  const handleAdoSaveEstimate = useCallback(
-    async (item: AzureWorkItem, points: string) => {
-      await ado.saveEstimate(item.id, points);
-      ado.markVoted(item.id);
-    },
-    [ado],
   );
 
   return (
@@ -258,10 +241,7 @@ export function Room() {
               <div className="mb-5">
                 <AzureDevOpsPanel
                   ado={ado}
-                  revealed={revealed}
-                  consensusValue={consensusValue}
                   onSelectItem={handleAdoSelectItem}
-                  onSaveEstimate={handleAdoSaveEstimate}
                 />
               </div>
             )}

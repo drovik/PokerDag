@@ -141,53 +141,18 @@ export function useAzureDevOps() {
   );
 
   const selectItem = useCallback((item: AzureWorkItem) => {
-    setActiveItemId(item.id);
+    setActiveItemId((prev) => {
+      if (prev !== null && prev !== item.id) {
+        setVotedIds((ids) => new Set([...ids, prev]));
+      }
+      return item.id;
+    });
   }, []);
 
   const markVoted = useCallback((id: number) => {
     setVotedIds((prev) => new Set([...prev, id]));
     setActiveItemId(null);
   }, []);
-
-  const saveEstimate = useCallback(
-    async (workItemId: number, points: string) => {
-      if (!config) return;
-      const numericPoints = Number(points);
-      if (!isFinite(numericPoints)) return;
-
-      const authHeader = `Basic ${btoa(':' + config.pat)}`;
-      const orgEnc = encodeURIComponent(config.org);
-      const res = await fetch(
-        `https://dev.azure.com/${orgEnc}/_apis/wit/workitems/${workItemId}?api-version=7.0`,
-        {
-          method: 'PATCH',
-          headers: {
-            Authorization: authHeader,
-            'Content-Type': 'application/json-patch+json',
-          },
-          body: JSON.stringify([
-            {
-              op: 'add',
-              path: '/fields/Microsoft.VSTS.Scheduling.StoryPoints',
-              value: numericPoints,
-            },
-          ]),
-        },
-      );
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Failed to save estimate: ${text.slice(0, 200)}`);
-      }
-
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === workItemId ? { ...item, storyPoints: numericPoints } : item,
-        ),
-      );
-    },
-    [config],
-  );
 
   const activeItem = items.find((i) => i.id === activeItemId) ?? null;
 
@@ -204,6 +169,5 @@ export function useAzureDevOps() {
     fetchItems,
     selectItem,
     markVoted,
-    saveEstimate,
   };
 }
