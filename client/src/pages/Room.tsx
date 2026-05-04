@@ -148,6 +148,7 @@ export function Room() {
 
   const [name, setName] = useState(() => localStorage.getItem('pokerdag-name') ?? '');
   const [showNameEdit, setShowNameEdit] = useState(false);
+  const [presenterMode, setPresenterMode] = useState(false);
 
   useEffect(() => {
     if (!room.loading && !room.joined && name) {
@@ -207,6 +208,7 @@ export function Room() {
               myId={room.myId}
               revealed={revealed}
               outliers={outliers}
+              presenterMode={presenterMode}
               onReveal={room.reveal}
               onNewRound={room.newRound}
             />
@@ -215,7 +217,21 @@ export function Room() {
 
             {!revealed && (
               <div className="mt-6">
-                <CardGrid myVote={myVote} onVote={room.vote} />
+                <div className="flex justify-center mb-3">
+                  <button
+                    onClick={() => setPresenterMode((m) => !m)}
+                    title="Hide your vote while screen sharing"
+                    className={[
+                      'text-xs px-3 py-1 rounded-full border transition-all flex items-center gap-1.5',
+                      presenterMode
+                        ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10'
+                        : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text-3)]',
+                    ].join(' ')}
+                  >
+                    🖥️ {presenterMode ? 'Screen sharing — vote hidden' : 'Screen sharing'}
+                  </button>
+                </div>
+                <CardGrid myVote={myVote} onVote={room.vote} presenterMode={presenterMode} />
               </div>
             )}
           </>
