@@ -8,6 +8,7 @@ type PokerTableProps = {
   myId: string;
   revealed: boolean;
   outliers: { low: Set<string>; high: Set<string> };
+  presenterMode: boolean;
   onReveal: () => void;
   onNewRound: () => void;
 };
@@ -37,14 +38,16 @@ function Seat({
   isMe,
   revealed,
   outlierType,
+  presenterMode,
 }: {
   participant: Participant;
   isMe: boolean;
   revealed: boolean;
   outlierType: OutlierType;
+  presenterMode: boolean;
 }) {
   const hasVoted = participant.vote !== null;
-  const showValue = revealed || isMe;
+  const showValue = revealed || (isMe && !presenterMode);
 
   let cardClass =
     'w-10 h-14 rounded-lg border-2 flex items-center justify-center text-sm font-bold transition-all duration-300 shadow-md select-none';
@@ -108,6 +111,7 @@ export function PokerTable({
   myId,
   revealed,
   outliers,
+  presenterMode,
   onReveal,
   onNewRound,
 }: PokerTableProps) {
@@ -235,7 +239,13 @@ export function PokerTable({
             className="absolute -translate-x-1/2 -translate-y-1/2"
             style={seatPosition(i, participants.length)}
           >
-            <Seat participant={p} isMe={p.id === myId} revealed={revealed} outlierType={outlierType} />
+            <Seat
+              participant={p}
+              isMe={p.id === myId}
+              revealed={revealed}
+              outlierType={outlierType}
+              presenterMode={presenterMode}
+            />
           </div>
         );
       })}
