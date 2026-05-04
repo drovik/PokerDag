@@ -16,7 +16,10 @@ type PokerTableProps = {
 const COUNTDOWN_SECS = 5;
 
 function seatPosition(index: number, total: number) {
-  const angle = (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
+  // 240° arc centered at 12 o'clock — keeps seats out of the bottom 120°
+  // Half-slot offset ensures symmetric distribution without hitting arc endpoints
+  const ARC = (4 / 3) * Math.PI;
+  const angle = -Math.PI / 2 - ARC / 2 + ((index + 0.5) / Math.max(total, 1)) * ARC;
   return {
     left: `${50 + 44 * Math.cos(angle)}%`,
     top: `${50 + 44 * Math.sin(angle)}%`,
