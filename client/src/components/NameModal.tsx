@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 
 type NameModalProps = {
   initial?: string;
+  existingNames?: string[];
   onSubmit: (name: string, observer?: boolean) => void;
   onClose?: () => void;
 };
 
-export function NameModal({ initial = '', onSubmit, onClose }: NameModalProps) {
+export function NameModal({ initial = '', existingNames, onSubmit, onClose }: NameModalProps) {
   const [value, setValue] = useState(initial);
   const [observer, setObserver] = useState(false);
 
@@ -21,6 +22,9 @@ export function NameModal({ initial = '', onSubmit, onClose }: NameModalProps) {
   };
 
   const isInitialJoin = !initial;
+  const isDuplicate =
+    isInitialJoin &&
+    !!existingNames?.some((n) => n.toLowerCase() === value.trim().toLowerCase());
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -40,6 +44,11 @@ export function NameModal({ initial = '', onSubmit, onClose }: NameModalProps) {
             maxLength={30}
             className="w-full bg-[var(--bg-2)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text)] placeholder:text-[var(--text-3)] focus:outline-none focus:border-[var(--border-focus)] transition-colors mb-4"
           />
+          {isDuplicate && (
+            <div className="mb-4 px-3 py-2 rounded-xl bg-amber-900/40 border border-amber-700/60 text-amber-300 text-xs leading-snug">
+              <span className="font-semibold">"{value.trim()}"</span> is already in this room. You'll appear as a separate seat — consider using a different name.
+            </div>
+          )}
 
           {isInitialJoin && (
             <div className="flex gap-2 mb-4">
@@ -85,7 +94,7 @@ export function NameModal({ initial = '', onSubmit, onClose }: NameModalProps) {
               disabled={!value.trim()}
               className="flex-1 py-3 btn-accent disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl"
             >
-              {isInitialJoin ? (observer ? '👁️ Watch' : '🃏 Join room') : 'Save'}
+              {isInitialJoin ? (isDuplicate ? '⚠️ Join anyway' : observer ? '👁️ Watch' : '🃏 Join room') : 'Save'}
             </button>
           </div>
         </form>

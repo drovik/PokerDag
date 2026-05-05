@@ -230,9 +230,10 @@ export function Room() {
   }
 
   if (!name) {
+    const existingNames = room.participants.map((p) => p.name);
     return (
       <div className="min-h-screen bg-[var(--bg)]">
-        <NameModal onSubmit={handleNameSubmit} />
+        <NameModal existingNames={existingNames} onSubmit={handleNameSubmit} />
       </div>
     );
   }
