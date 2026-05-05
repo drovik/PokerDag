@@ -10,11 +10,15 @@ import {
   serverTimestamp,
   writeBatch,
   enableNetwork,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Participant } from '../types';
 
 const SESSION_KEY = 'pokerdag-session-id';
+const HIDE_TIMEOUT_MS = 120_000;    // 2 min: remove participant if tab stays hidden
+const STALE_THRESHOLD_MS = 180_000; // 3 min: filter participants with no heartbeat
+const HEARTBEAT_MS = 30_000;        // 30s: keep lastSeen fresh while active
 
 function getSessionId(): string {
   let id = localStorage.getItem(SESSION_KEY);
@@ -25,9 +29,19 @@ function getSessionId(): string {
   return id;
 }
 
+type RawParticipant = Participant & { lastSeenMs: number | null };
+
+function filterStale(raw: RawParticipant[]): Participant[] {
+  const now = Date.now();
+  return raw
+    .filter((p) => p.lastSeenMs === null || now - p.lastSeenMs < STALE_THRESHOLD_MS)
+    .map(({ lastSeenMs: _ls, ...p }) => p);
+}
+
 export function useRoom(roomId: string) {
   const myId = useRef(getSessionId()).current;
   const participantsRef = useRef<Participant[]>([]);
+  const rawParticipantsRef = useRef<RawParticipant[]>([]);
   const joinedRef = useRef(false);
   const observerRef = useRef(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -43,6 +57,7 @@ export function useRoom(roomId: string) {
 
     const roomDocRef = doc(db, 'rooms', roomId);
     const participantsColRef = collection(db, 'rooms', roomId, 'participants');
+    const participantDocRef = doc(db, 'rooms', roomId, 'participants', myId);
 
     const unsubRoom = onSnapshot(roomDocRef, (snap) => {
       if (snap.exists()) {
@@ -56,16 +71,30 @@ export function useRoom(roomId: string) {
     });
 
     const unsubParticipants = onSnapshot(participantsColRef, (snap) => {
-      const ps: Participant[] = snap.docs.map((d) => ({
-        id: d.id,
-        name: d.data().name as string,
-        vote: d.data().vote as string | null,
-        observer: d.data().observer as boolean | undefined,
-      }));
-      setParticipants(ps);
+      const raw: RawParticipant[] = snap.docs.map((d) => {
+        const ls = d.data().lastSeen as Timestamp | null;
+        return {
+          id: d.id,
+          name: d.data().name as string,
+          vote: d.data().vote as string | null,
+          observer: d.data().observer as boolean | undefined,
+          lastSeenMs: ls?.toMillis() ?? null,
+        };
+      });
+      rawParticipantsRef.current = raw;
+      setParticipants(filterStale(raw));
     });
 
-    const participantDocRef = doc(db, 'rooms', roomId, 'participants', myId);
+    // Re-filter every minute so stale participants disappear even without a new snapshot
+    const refilterInterval = setInterval(() => {
+      setParticipants(filterStale(rawParticipantsRef.current));
+    }, 60_000);
+
+    // Heartbeat: keep lastSeen fresh while the tab is visible and joined
+    const heartbeatInterval = setInterval(() => {
+      if (!joinedRef.current || document.visibilityState !== 'visible') return;
+      updateDoc(participantDocRef, { lastSeen: serverTimestamp() }).catch(() => {});
+    }, HEARTBEAT_MS);
 
     const cleanup = () => {
       deleteDoc(participantDocRef).catch(() => {});
@@ -82,6 +111,7 @@ export function useRoom(roomId: string) {
           vote: null,
           observer: observerRef.current,
           joinedAt: serverTimestamp(),
+          lastSeen: serverTimestamp(),
         }).catch(() => {});
       }
     };
@@ -102,7 +132,7 @@ export function useRoom(roomId: string) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        hideTimer = setTimeout(cleanup, 300_000);
+        hideTimer = setTimeout(cleanup, HIDE_TIMEOUT_MS);
       } else {
         if (hideTimer !== null) {
           clearTimeout(hideTimer);
@@ -110,11 +140,19 @@ export function useRoom(roomId: string) {
         }
         syncRoomState();
         setTimeout(rejoin, 1500);
+        if (joinedRef.current) {
+          updateDoc(participantDocRef, { lastSeen: serverTimestamp() }).catch(() => {});
+        }
       }
     };
 
     const handleOnline = () => syncRoomState();
-    const handleFocus = () => syncRoomState();
+    const handleFocus = () => {
+      syncRoomState();
+      if (joinedRef.current) {
+        updateDoc(participantDocRef, { lastSeen: serverTimestamp() }).catch(() => {});
+      }
+    };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('online', handleOnline);
@@ -123,6 +161,8 @@ export function useRoom(roomId: string) {
     return () => {
       unsubRoom();
       unsubParticipants();
+      clearInterval(refilterInterval);
+      clearInterval(heartbeatInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('focus', handleFocus);
@@ -141,6 +181,7 @@ export function useRoom(roomId: string) {
         vote: null,
         observer,
         joinedAt: serverTimestamp(),
+        lastSeen: serverTimestamp(),
       });
       observerRef.current = observer;
       joinedRef.current = true;
