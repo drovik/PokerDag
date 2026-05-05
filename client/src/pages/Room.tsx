@@ -162,14 +162,7 @@ function PresenterKeyLegend({ myVote }: { myVote: string | null }) {
       <div className="flex flex-wrap justify-center gap-2">
         {KEY_LABELS.map(([key, value]) => (
           <div key={value} className="flex flex-col items-center gap-1">
-            <span
-              className={[
-                'w-10 h-12 flex items-center justify-center rounded-xl border-2 text-base font-bold transition-all',
-                myVote === value
-                  ? 'btn-accent border-[var(--accent)] scale-105 shadow-lg'
-                  : 'bg-[var(--bg-3)] border-[var(--border)] text-[var(--text)] opacity-50',
-              ].join(' ')}
-            >
+            <span className="w-10 h-12 flex items-center justify-center rounded-xl border-2 text-base font-bold bg-[var(--bg-3)] border-[var(--border)] text-[var(--text)] opacity-50">
               {value}
             </span>
             <span className="text-[10px] text-[var(--text-muted)] font-mono">{key}</span>
